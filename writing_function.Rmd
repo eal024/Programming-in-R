@@ -302,15 +302,553 @@ calc_harmonic_mean(std_and_poor500$sector)
 ```
 
 
+## Returning values from function
+
+
 
 ```{r}
 
+
+is_leap_year <- function(year) {
+  # If year is div. by 400 return TRUE
+  if(year%%400 == 0) {
+    return(T)
+  }
+  # If year is div. by 100 return FALSE
+  if(year%% 100 == 0) {
+    return(F)
+  }  
+  # If year is div. by 4 return TRUE
+  if(is_divisible_by(year, 4)){
+    return(T)
+  }
+  
+  
+  # Otherwise return FALSE
+  FALSE
+}
+
+
+```
+
+
+Return automatical data which is in the plot
+```{r}
+# Define a scatter plot fn with data and formula args
+pipeable_plot <- function(data, formula) {
+  # Call plot() with the formula interface
+  plot(formula, data)
+  # Invisibly return the input dataset
+  invisible(data)
+}
+
+# Draw the scatter plot of dist vs. speed again
+plt_dist_vs_speed <- cars %>% 
+  pipeable_plot(   dist ~speed, data = .)
+
+# Now the plot object has a value
+plt_dist_vs_speed
+```
+
+
+## Returning multiple values from functions
+Two ways to get around:
+
+- List
+- Attributs
+
+Eks:
+```{r}
+
+session <- function( ) {
+  
+  list(
+    R.version = R.version.string,
+
+    operationg_ssytem = Sys.info()[c("sysname", "release")],
+
+    loaded_pkgs = loadedNamespaces()
+    
+  )
+}
+
+session()
+
+
+```
+
+Not as a list: unpacking variables (multi ass. operator)
+```{r}
+library(zeallot)
+
+c(vrsn, os, pkgs) %<-% session()
+
+os
+
+vrsn
+
+```
+
+Alt 2: Attributs
+
+```{r}
+month_no <- setNames(1:12, month.abb)
+
+month_no
+
+
+attributes(month_no)
+attr(month_no, "names")
+
+attr(month_no, "names") <- month.name
+```
+
+
+### Attributs of data frame
+
+
+```{r}
+# Three attributs
+ # 1) names, row.names, class
+Orange %>% head()
+
+attributes(Orange)
+
+# Give new attributs. Example:
+
+Orange %>% 
+  group_by(Tree ) %>% 
+  attributes()
+
+
+# group_by: ex. when df is input, df should be output. 
+# Group_by is now a attributs (groups)
+```
+
+#### Example Data Camp, and the broom() - pgk
+
+
+```{r}
+model <- lm()
+# Look at the structure of model (it's a mess!)
+str(model)
+
+# Use broom tools to get a list of 3 data frames
+list(
+  # Get model-level values
+  model = glance(model),
+  # Get coefficient-level values
+  coefficients = tidy(model),
+  # Get observation-level values
+  observations = augment(model)
+)
+```
+
+```{r}
+# From previous step
+groom_model <- function(model) {
+  list(
+    model = glance(model),
+    coefficients = tidy(model),
+    observations = augment(model)
+  )
+}
+
+# Call groom_model on model, assigning to 3 variables
+attributes(groom_model)
+
+# See these individual variables
+c(mdl, cff, obs) %<-% groom_model(model)
+```
+
+Adding attributs to function
+
+```{r}
+pipeable_plot <- function(data, formula) {
+  plot(formula, data)
+  # Add a "formula" attribute to data
+  attr(data, "formula") <- formula
+  invisible(data)
+}
+
+# From previous exercise
+plt_dist_vs_speed <- cars %>% 
+  pipeable_plot(dist ~ speed)
+
+# Examine the structure of the result
+str(plt_dist_vs_speed)
+```
+
+
+## Environments
+
+```{r}
+# Add capitals, national_parks, & population to a named list
+rsa_lst <- list(
+  capitals = "capitals",
+  national_parks = "national_parks",
+  population = "population"
+)
+
+# List the structure of each element of rsa_lst
+ls.str(rsa_lst)
+
+
+```
+
+
+```{r}
+# From previous steps
+rsa_lst <- list(
+  capitals = capitals,
+  national_parks = national_parks,
+  population = population
+)
+rsa_env <- list2env(rsa_lst)
+
+# Find the parent environment of rsa_env
+parent <- parent.env(rsa_env)
+
+# Print its name
+environmentName(parent)
+```
+ 
+
+```{r}
+# Compare the contents of the global environment and rsa_env
+ls.str(globalenv())
+ls.str(rsa_env)
+
+# Does population exist in rsa_env?
+exists("population", envir = rsa_env)
+
+# Does population exist in rsa_env, ignoring inheritance?
+exists("population", envir = rsa_env,inherits = F )
+```
+
+
+## Grain yields and unit conversion
+
+```{r}
+# Write a function to convert acres to sq. yards
+acres_to_sq_yards <- function(x) {
+  x * 4840
+}
+
+# Write a function to convert yards to meters
+yards_to_meters <- function(x) {
+  
+  x*36*0.0254  
+
+}
+
+# Write a function to convert sq. meters to hectares
+sq_meters_to_hectares <- function(x) {
+  
+  
+  x/10000
+}
 
 
 ```
 
 
 
+```{r}
+# Write a function to convert sq. yards to sq. meters
+sq_yards_to_sq_meters <- function(sq_yards) {
+  sq_yards %>%
+    # Take the square root
+    sqrt( ) %>%
+    # Convert yards to meters
+    yards_to_meters() %>%
+    # Square it
+    raise_to_power(2)
+}
+
+
+```
+
+
+```{r}
+# Load the function from the previous step
+load_step2()
+
+# Write a function to convert acres to hectares
+acres_to_hectares <- function(x) {
+  x %>%
+    # Convert acres to sq yards
+    acres_to_sq_yards() %>%
+    # Convert sq yards to sq meters
+    sq_yards_to_sq_meters() %>%
+    # Convert sq meters to hectares
+    sq_meters_to_hectares()
+}
+
+
+```
+
+
+```{r}
+# Load the functions from the previous steps
+load_step3()
+
+# Define a harmonic acres to hectares function
+harmonic_acres_to_hectares <- function(acres) {
+  acres %>% 
+    # Get the reciprocal
+    get_reciprocal() %>%
+    # Convert acres to hectares
+    acres_to_hectares() %>% 
+    # Get the reciprocal again
+    get_reciprocal()
+}
+```
+
+
+### Next
+
+```{r}
+# Write a function to convert lb to kg
+lbs_to_kgs <- function(x) {
+  
+  x*0.45359237
+}
+```
+
+
+```{r}
+# Write a function to convert bushels to lbs
+bushels_to_lbs <- function(bushels, crop) {
+  # Define a lookup table of scale factors
+  c(barley = 48, corn = 56, wheat = 60) %>%
+    # Extract the value for the crop
+    extract(crop) %>%
+    # Multiply by the no. of bushels
+    multiply_by( bushels)
+}
+
+
+a<- c(a =10, b = 20)
+
+a %>% magrittr::extract("b")
+```
+
+```{r}
+# Load fns defined in previous steps
+load_step3()
+
+# Write a function to convert bushels to kg
+bushels_to_kgs <- function(bushels, crop) {
+  bushels %>%
+    # Convert bushels to lbs for this crop
+    bushels_to_lbs(crop) %>%
+    # Convert lbs to kgs
+    lbs_to_kgs()
+}
+```
+
+
+```{r}
+# Load fns defined in previous steps
+load_step4()
+
+# Write a function to convert bushels/acre to kg/ha
+bushels_per_acre_to_kgs_per_hectare <- function(bushels_per_acre, crop = c("barley", "corn", "wheat")) {
+  # Match the crop argument
+  crop <- match.arg(crop)
+  bushels_per_acre %>%
+    # Convert bushels to kgs for this crop
+    bushels_to_kgs(crop) %>%
+    # Convert harmonic acres to ha
+    harmonic_acres_to_hectares()
+}
+```
+
+
+```{r}
+# View the corn dataset
+glimpse(corn)
+
+corn %>%
+  # Add some columns
+  mutate(
+    # Convert farmed area from acres to ha
+    farmed_area_ha = acres_to_hectares(farmed_area_acres),
+    # Convert yield from bushels/acre to kg/ha
+    yield_kg_per_ha = bushels_per_acre_to_kgs_per_hectare(
+      yield_bushels_per_acre, 
+      crop = "corn"
+    )
+  )
+```
+
+
+```{r}
+# Wrap this code into a function
+fortify_with_metric_units <- function(data, crop) {
+  data %>%
+    mutate(
+      farmed_area_ha = acres_to_hectares(farmed_area_acres),
+      yield_kg_per_ha = bushels_per_acre_to_kgs_per_hectare(
+        yield_bushels_per_acre, 
+        crop = crop
+      )
+    )
+}
+
+# Try it on the wheat dataset
+fortify_with_metric_units(wheat, crop = "wheat")
+```
+
+
+## Viz data
+
+
+```{r}
+nass.corn <- readRDS("C:/Users/ely/Google Drive/R Filer/RStudio/Programming-in-R/nass.corn.rds")
+
+
+
+nass.corn %>% 
+  left_join(nass.corn %>% group_by(state) %>% summarise( tot = sum(farmed_area_acres)), by = "state") %>% 
+  mutate( state = fct_reorder(state, tot),
+          state_tot = glue::glue( "{state} ({tot/1000})")) %>% 
+  mutate( state_tot = fct_reorder( state_tot, tot)) %>% 
+  ggplot() +
+  aes( y = yield_bushels_per_acre , x = year) +
+  geom_line() +
+  facet_wrap( .~state_tot) +
+  theme_light() +
+  labs( title = "Yield bushels per acre. State and total farmed area in (), div. by 1000")
+
+
+usa_census_regions <-
+  readr::read_csv(
+    "https://raw.githubusercontent.com/cphalpert/census-regions/master/us%20census%20bureau%20regions%20and%20divisions.csv"
+  ) %>% janitor::clean_names()
+
+
+wheat <- readRDS("C:/Users/ely/Google Drive/R Filer/RStudio/Programming-in-R/nass.wheat.rds")
+```
+
+
+```{r}
+# Wrap this code into a function
+fortify_with_census_region <- function(data) {
+  data %>%
+    inner_join(usa_census_regions, by = "state")
+}
+
+# Try it on the wheat dataset
+fortify_with_census_region(wheat)
+
+```
+
+
+```{r}
+# Plot yield vs year for the corn dataset
+plot_yield_vs_year(corn) +
+  # Facet, wrapped by census region
+  facet_wrap(vars(census_region))
+```
+
+
+```{r}
+plot_yield_vs_year_by_region <- function(data) {
+  plot_yield_vs_year(data) +
+    facet_wrap(vars(census_region))
+}
+
+# Try it on the wheat dataset
+plot_yield_vs_year_by_region(wheat)
+```
+
+
+
+## Modeling with GAM - General add. model
+
+```{r}
+# Run a generalized additive model of 
+# yield vs. smoothed year and census region
+gam(yield_kg_per_ha ~ s(year) + census_region, data = corn)
+
+
+```
+
+
+```{r}
+# Wrap the model code into a function
+run_gam_yield_vs_year_by_region <- function(data) {
+  gam(yield_kg_per_ha ~ s(year) + census_region, data = data)
+}
+
+# Try it on the wheat dataset
+run_gam_yield_vs_year_by_region(wheat)
+
+
+```
+
+
+```{r}
+  # Make predictions in 2050  
+predict_this <- data.frame(
+  year = 2050,
+  census_region = census_regions
+) 
+
+# Predict the yield
+pred_yield_kg_per_ha <-  predict( corn_model , predict_this, type = "response")
+
+predict_this %>%
+  # Add the prediction as a column of predict_this 
+  mutate(pred_yield_kg_per_ha = pred_yield_kg_per_ha )
+```
+
+
+```{r}
+# Wrap this prediction code into a function
+predict_yields <- function(model, year) {
+  predict_this <- data.frame(
+    year = year,
+    census_region = census_regions
+  ) 
+  pred_yield_kg_per_ha <- predict(model, predict_this, type = "response")
+  predict_this %>%
+    mutate(pred_yield_kg_per_ha = pred_yield_kg_per_ha)
+}
+# Try it on the wheat dataset
+predict_yields(wheat_model, year = 2050)
+```
+
+
+
+
+```{r}
+fortified_barley <- barley %>% 
+  # Fortify with metric units
+  fortify_with_metric_units %>%
+  # Fortify with census regions
+  fortify_with_census_region
+
+# See the result
+glimpse(fortified_barley)
+
+```
+
+
+```{r}
+# From previous step
+fortified_barley <- barley %>% 
+  fortify_with_metric_units() %>%
+  fortify_with_census_region()
+
+fortified_barley %>% 
+  # Run a GAM of yield vs. year by region
+  run_gam_yield_vs_year_by_region( )  %>% 
+  # Make predictions of yields in 2050
+  predict_yields(2050)
+```
 
 
 
