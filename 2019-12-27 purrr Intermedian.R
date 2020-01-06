@@ -280,3 +280,51 @@ map(all_visits, ~ some(.x, over_threshold))
 
 
 
+# Functional programming in R ---------------------------------------------
+
+#impure function
+Sys.time()
+
+# pure
+nrow()
+
+
+# side effect
+plot(iris)
+
+# adverbs 
+possibly()
+
+# if fail, return result and error
+safely()
+
+# Example:
+
+map(list(2,"a"), log )
+
+# use saftly -> tell result or error
+map(list(2, "a"), safely(log))
+
+# More: print only error or result
+map(list(2, "a"), safely(log)) %>% map("result")
+
+map(list(2, "a"), safely(log)) %>% map("error")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
