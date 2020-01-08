@@ -305,10 +305,110 @@ map(list(2,"a"), log )
 # use saftly -> tell result or error
 map(list(2, "a"), safely(log))
 
-# More: print only error or result
+# More: print only error or 
 map(list(2, "a"), safely(log)) %>% map("result")
 
 map(list(2, "a"), safely(log)) %>% map("error")
+
+
+urls <- c("eirik", "trond", "christoffer")
+
+# Create a safe version of read_lines()
+safe_read <- safely(function(x) {read_lines(x)})
+
+# Map it on the urls vector
+res <- map(urls, safe_read)
+
+# Set the name of the results to `urls`
+named_res <- set_names(res,urls)
+
+# Extract only the "error" part of each sublist
+named_res %>% map("error")
+
+named_res %>% map("result")
+
+
+
+
+# safely, discard and map as function -------------------------------------
+
+a <- list(1, 2, -1, 2, 0, -3, 5)
+
+a <- a %>% set_names(letters[1:length(a)])
+
+map_df( discard(a, function(x) {x < 0}), function(x){print(x)} ) 
+
+
+# implement safely
+safe_read <- safely( function(x) read_lines(x))
+
+# discard
+safe_read_disc <- function(read_list) {
+  safe_read(read_list) %>% 
+    discard(is.null)
+}
+
+
+til_lesing <- c("en", "to", NULL, "tre")
+
+safe_read_disc(til_lesing) 
+
+
+
+
+# Possibly : as safely but not reported with "error" or "result--------------------
+
+# A first example
+
+try_sum <- possibly( function(x) {sum(x)}, otherwise = "Not logical to sum")
+
+test <-  c(1,2, 3, "En")
+test2 <- seq(1:10)
+
+try_sum(test)
+try_sum(test2)
+
+# Example 2
+# Create a possibly() version of read_lines()
+possible_read <- possibly(read_lines, otherwise = 404)
+
+# Map this function on urls, pipe it into set_names()
+res <- map(urls, possible_read) %>% set_names(urls)
+
+# Paste each element of the list 
+res_pasted <- map(res, paste, collapse = " ")
+
+# Keep only the elements which are equal to 404
+keep(res_pasted, function(x){ x == 404})
+
+## Example Three
+url_tester <- function(url_list){
+  url_list %>%
+    # Map a version of read_lines() that otherwise returns 404
+    map( possibly(read_lines, otherwise = 404) ) %>%
+    # Set the names of the result
+    set_names( urls ) %>% 
+    # paste() and collapse each element
+    map(paste, collapse = " ") %>%
+    # Remove the 404 
+    discard(function(x) {x == 404}) %>%
+    names() # Will return the names of the good ones
+}
+
+# Try this function on the urls object
+url_tester(urls)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
