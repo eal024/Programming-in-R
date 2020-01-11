@@ -401,19 +401,102 @@ url_tester(urls)
 
 
 
+# Handling adverb results -------------------------------------------------
+
+# cleaing safely results
+
+l <- list("a", 2, 3, 4)
+
+# gives 4
+map(l, function(x){safely(function(y) {log(y)} ) } ) %>% length()
+
+
+# gives 2
+safe_log <- safely(x, function(x) {log(x)})
+
+# Put errror and result into each sublist
+map(l, safe_log) %>% transpose() %>% length()
+
+
+sublist <- map(l, safe_log) %>% transpose()
+
+sublist[2]
+
+## use compact for remove NULL: Clean safely 
+
+list_w_null <-list(1, NULL, 3, NULL)
+
+list_w_null %>% compact()
+
+
+# Examples: ---------------------------------------------------------------
 
 
 
+se <- function(x, type = c("en", "enig", "toig")) {
+  
+  valgt <- match.arg(type)
+  ganger <-switch(valgt, 
+         en = 1,
+         enig = 2,
+         toig = 3)
+  
+  x*ganger
+  
+}
+
+# dont work
+se(1, type = "e")
+
+# work:
+se(1, type = "en")
+se(1, type = "eni")
+
+## Example
+
+urls_l <- list("http://thinr.fr", "http://datacamp.com", "http://ht.no")
+
+safe_read <- safely(function(x) {read_lines(x)})
+
+url_tester <- function(url_list, type = c("result", "error")) {
+  type <- match.arg(type)
+  url_list %>%
+    # Apply safe_read to each URL
+    map(safe_read) %>%
+    # Set the names to the URLs
+    set_names( url_list ) %>%
+    # Transpose into a list of $result and $error
+    transpose()  %>%
+    # Pluck the type element
+    pluck(type)  
+  }
+
+# Try this function on the urls object
+url_tester(urls_l, type = "result") 
+
+## Example cont.:
+url_tester <- function(url_list){
+  url_list %>%
+    # Map a version of GET() that would otherwise return NULL 
+    map( safely(GET, function(x) {read_lines(x)})) %>%
+    # Set the names of the result
+    set_names( urls ) %>%
+    # Remove the NULL
+    discard(is.null) %>%
+    # Extract all the "status_code" elements
+    map("status_code" )
+}
+
+# Try this function on the urls object
+url_tester(urls)
 
 
-
-
-
-
-
-
-
-
+# Great! We have seen in this chapter how to write
+# custom functions which can help you when doing data 
+# analysis: for example, 
+# it's crucial when you are doing web scraping,
+# to ensure that the urls you want to scrape are reachable.
+# Now you now how to do this ;)
 
 
 
