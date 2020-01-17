@@ -501,9 +501,23 @@ url_tester(urls)
 
 
 
+# New chapter - Why cleaner code? -----------------------------------------
+
+library(tidyverse);library(broom)
+
+# Example, can end with repeatly change thing in the formula
+iris %>% 
+  lm( Sepal.Length ~ Species, data = .) %>% tidy() %>% filter(p.value < 0.05)
+
+tidy_iris_lm <- compose(as_mapper(~ filter(.x, p.value < 0.05)),
+                        tidy,
+                        partial(lm, data = iris, na.action = na.fail))
 
 
-
+list(
+  Petal.Length ~ Petal.Width,
+  Petal.Width ~ Sepal.Width
+) %>% map(tidy_iris_lm)
 
 
 
