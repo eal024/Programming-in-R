@@ -120,6 +120,111 @@ is_not_na(res_named)
 
 
 
+# New verb -- partial -----------------------------------------------------------------
+
+lm_iris <- partial(lm, data = iris)
+
+lm_iris(Sepal.Length ~Sepal.Width)
+
+
+mean_na_rm <- partial( mean, na.rm = T)
+
+mean_na_rm( c(1,2,3,NA))
+
+
+# compose and partial
+
+rounded_mean <- compose(
+  partial( round, digits = 2),
+  partial( mean, na.rm =T)
+)
+
+
+rounded_mean( c(1.2,2.02,3.3,NA))
+
+
+
+# purrr - compose and partail with the rrvest -----------------------------
+urls <- c("https://thinkr.fr", "https://datacamp.com")
+library(rvest)
+
+# Prefill html_nodes() with the css param set to h2
+get_h2 <- partial(html_nodes, css = "h2")
+
+# Combine the html_text, get_h2 and read_html functions
+get_content <- compose(html_text, get_h2, read_html)
+
+# Map get_content to the urls list
+res <- map(urls, get_content) %>%
+  set_names(urls)
+
+# Print the results to the console
+print(res)
+
+### get all the links:
+
+# Create a partial version of html_nodes(), with the css param set to "a"
+get_a <- partial(html_nodes, css = "a")
+
+# Create href(), a partial version of html_attr()
+href <- partial(html_attr, name = "href")
+
+# Combine href(), get_a(), and read_html()
+get_links <- compose(href, get_a, read_html)
+
+# Map get_links() to the urls list
+res <- map(urls, get_links) %>%
+  set_names(urls)
+
+# See the result
+res
+
+
+# nested dataframe --------------------------------------------------------
+
+seq_letters <- 
+  compose( as_mapper(~letters[.x] ), 
+           as_mapper(~seq(.x)) )
+
+seq_letters(seq(1:3))
+
+df_letters <- tibble(
+  classic = seq_letters(1:3),
+  list = list(seq_letters(1:3),
+              seq_letters(1:6),
+              seq_letters(1:9))
+)
+
+
+df_letters
+
+
+a_node <- partial( html_node, css = "a")
+href <- partial(html_attr, name = "href")
+get_links <- compose(href, get_a, read_html)
+
+
+urls_df <- tibble( 
+  urls = c("https://thinkr.fr", "https://datacamp.com")
+  )
+
+# nested dataframe (tibble)
+urls_df %>% 
+  mutate( links = purrr::map(urls, function(x) {get_links(x)})) %>% 
+  unnest( links) %>% filter( urls == str_detect(urls, "thinkr"))
+
+
+iris %>% 
+  group_by(Species) %>% 
+  nest( ) %>% 
+  mutate( descri = purrr::map(data$Sepal.Length , function(x) {summarise( mean = mean(x, na.rm = T ))}))
+
+
+
+  
+  
+
+
 
 
 
