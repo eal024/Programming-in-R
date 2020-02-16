@@ -28,11 +28,11 @@ map_dbl( test_liste, function(x) {round_and_mean(x)/100})
 mtcars <- as_tibble(mtcars)
 
 
-mtcars %>%
-  mutate( id = row_number()) %>% 
-  pivot_longer( names_to = "var", values_to = "value", mpg:carb) %>%
-  arrange( var) %>% 
-  group_by(var) %>% 
-  nest() %>% 
-  mutate( mean = map(data , function(x){ mean(x, na.rm  = T)})) %>% unnest()
-
+iris %>% 
+  group_by(Species) %>% 
+  nest( ) %>% 
+  mutate( descri = purrr::map(data , function( x ) {x %>% summarise( sum = sum(x$Sepal.Length, na.rm = T),
+                                                                     mean = mean(x$Sepal.Length, na.rm = T),
+                                                                     sd = sd(x$Sepal.Length, na.rm =T))  }  )
+  ) %>% 
+  unnest(descri)
