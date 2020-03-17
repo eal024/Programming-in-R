@@ -12,6 +12,7 @@ l
 
 
 
+
 # Which number does accour in both l[[1]] and the l[[x]]?
 out <- l[[1]]
 out <- intersect(out, l[[2]])

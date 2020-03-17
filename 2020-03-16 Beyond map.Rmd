@@ -1,0 +1,279 @@
+---
+title: "GoT Hendrik Vanb – Beyound map"
+author: "Eirik Lamøy"
+date: "16 3 2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+A go thourgh of these exlent [slides](https://hendrikvanb.gitlab.io/slides/purrr_beyond_map.html#28).
+
+
+## write and read files with pwalk
+
+
+### Write
+```{r}
+
+library(tidyverse)
+
+# Check for file, the command shows that dere are no files at the dir.
+list.files("data/mpg")
+
+# create files by taking the mpg df %>% collapsing the data for each manufacturer into a list column %>% walking over the two columns in the df and for each pair (i.e. row of manufacturer and data values) doing: {create path variable to point to the path where the data should be written %>% write the data to disk in .csv format}
+
+mpg %>% 
+  group_nest(manufacturer, keep = T) %>% 
+  pwalk( function(manufacturer, data) {
+    # Create each path for each file 
+    path <- file.path("data/mpg", glue::glue("df_{manufacturer}.csv") )  
+    # Write each file  
+    write_csv(data, path)
+  })
+
+
+
+```
+
+Effectiv check and print files from a directory
+
+```{r}
+
+list.files("data/mpg") %>%  {c(head(., 2), tail(.,2) )}
+
+
+
+```
+
+### Read
+
+Read each of the .csv files just written to disk into R's global environment as a data frames. Use each file's name (without the .csv extension) as the name for its data frame.
+
+```{r}
+# Check that there is no files:
+ls()
+
+list.files("data/mpg", pattern = ".csv", full.names = T) %>%  
+  set_names(str_remove(basename(.), pattern = ".csv$" )) %>% 
+  iwalk( function(x,i) assign(i,data.table::fread(x), .GlobalEnv))
+
+# Files should now be in th global envirment
+ls() %>% {c(head(.,2) , tail(., 2))}
+
+
+```
+
+## modify_* 
+
+Example: For each manufacturer in the mpg dataset, express all of the numeric columns as the % deviation from the mean
+
+1) Define a function
+
+```{r}
+my_fun <- function(x) {(x/mean(x,na.rm = T))-1}
+
+```
+
+dplyr approach
+```{r}
+# dplyr-way
+mpg %>% 
+  group_by(manufacturer) %>% 
+  mutate_if( is.numeric, function(x) {x^2}) %>% 
+  ungroup()
+
+
+```
+
+
+The data.table -way
+
+```{r}
+library(data.table)
+mpg %>% 
+  setDT( ) %>% 
+  .[by = .(manufacturer), j = modify_if(.SD, is.numeric, function(x) x^2)]
+```
+
+
+## Predicate functionals
+Predicate functional is a function that return TRUE or FALSE,
+Arg. vector X, and predicate .f ->
+
+
+Example:
+For which manufacturers in the mpg dataset do the city miles per gallon (cty) (a) exceed 15mpg on all models and/or (b) 25 mpg on at least some models?
+
+
+```{r}
+
+map_lgl( c(1:5), function(x) { x > 3})
+some(c(1:5), function(x) { x > 3})
+every(c(1:5), function(x) { x > 3})
+
+mpg %>%
+  group_by(manufacturer) %>% 
+  summarise( cyl_all_above_15 = every(cty, function(x) x >15),
+             cyl_some_above_25 = some(cty, function(x) x > 25)) %>% 
+  ungroup()
+
+
+```
+
+### every/some used with filter
+
+```{r}
+# take mpg %>% group by manufacturer %>% filter to
+# keep only data for manufacturers whose models all
+# have cty > 15mpg
+
+mpg %>% group_by(manufacturer) %>% 
+  filter( every( cty, function(x) {x > 15}))
+
+```
+
+
+## reduce() and accumulate()
+- Collasing and building it up:
+
+
+
+## Adverbs: 
+
+Compose and partial
+
+Compose
+
+```{r}
+round( mean( seq(from = 0.1, to = 5, length.out = 12), na.rm = T), digits = 1)
+
+round( mean( seq(from = 0.2, to = 10, length.out = 12), na.rm = T), digits = 1)
+
+# Simplify
+
+my_round_sum <- compose(~ mean(.x, na.rm = T),
+                        ~ round(.x, digits = 1),
+                        .dir = "forward")
+
+
+fun1 <- as_mapper( ~mean(.x, na.rm = T))
+fun2 <- as_mapper( function(x) {mean(x, na.rm = T)})
+fun3 <- as_mapper( function(x) {round(x, digits = 1)})
+
+my_round_sum(seq(from = 0.1, to = 5, length.out = 12))
+
+```
+
+
+partial
+
+```{r}
+round(0.921241, digits = 2)
+
+my_round <- partial(round, digits = 2)
+
+my_round(0.012)
+
+
+
+```
+
+## Reduce and accumulate
+
+reduce(.x, .f, ..., .init)
+use function .f to combine elements of .x by passing
+the result of each itteration as an initial value to the next
+itteration; return single result from nal itteration
+
+accumulate(.x, .f, ..., .init)
+use function .f to combine elements of .x by passing
+the result of each itteration as an initial value to the next
+itteration; return list of results from each itteration
+
+
+```{r}
+reduce(lettes[seq(1:5)], str_c )
+```
+
+
+
+### Compose for efficient model-calculation
+
+
+```{r}
+mpg %>% head()
+
+models <- c("trans", "drv", "class") %>%  accumulate( function(x,y)  { paste(x,y, sep = " + ") }, .init = "cty ~ manufacturer"  ) %>%  set_names(1:length(.)) 
+
+enframe(models, name = "model", value = "spec") 
+
+
+```
+
+
+```{r}
+# take models %>% estimate each using map to apply
+# the lm function %>% get the summary for each set of
+# results using map to apply the summary function %>%
+# extract the adjusted r-squared for each set of
+# summary results using map_dbl to extract it by name
+# %>% print the results in a neatly formatted tibble
+
+models %>% 
+  map(lm , data = mpg) %>% 
+  map(summary) %>% 
+  map_dbl( "adj.r.squared") %>% 
+  enframe(name = "model", value = "Adj-R2") %>% janitor::clean_names()
+```
+
+
+### With compose:
+
+```{r}
+my_comp <- compose(lm, summary, 
+                   ~pluck(.x, "adj.r.squared"),
+                   ~enframe(.x, name = "model", value = "adj.r.squared"),
+                   .dir = "forward")
+
+models %>% map_dfr(~my_comp(.x, data = mpg))
+
+```
+
+
+## Self-test
+
+```{r}
+
+models <- c("trans", "drv", "class") %>%  accumulate( function(x,y)  { paste(x,y, sep = " + ") }, .init = "cty ~ manufacturer"  ) %>%  set_names(1:length(.)) 
+
+
+
+c("trans", "drv", "class")
+
+c("trans", "drv", "class") %>%
+  accumulate(function(x, y) { str_c(x, y , sep = "+") }, .init = "city ~ manufacturer")
+
+# As a list
+models <-  list(a = "Eirik", b=  "Trond") %>%
+  accumulate(function(x, y) { str_c(x, y , sep = "+") }, .init = "city ~ manufacturer")
+
+enframe(models, name = "model", value = "spec") 
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
