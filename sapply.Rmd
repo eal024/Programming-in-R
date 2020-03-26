@@ -1,0 +1,222 @@
+---
+title: "baseR"
+author: "Eirik Lamøy"
+date: "20 3 2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Base R
+
+### lapply
+
+
+```{r}
+nyc <- list(pop = 80, boroughs = c("Man", "Bronx", "Brooklyn"),capital = F)
+
+
+# find class
+
+lapply(nyc, function(x) {class(x)})
+lapply(nyc, class)
+
+
+# count strings vector
+
+cities <- c("New York", "Paris")
+
+# allwyas return output as list
+lapply(cities, nchar)
+
+#
+lapply(cities, nchar) %>% unlist()
+
+# Alternativ
+map_dbl(cities, nchar)
+
+map(cities, nchar) %>% unlist()
+
+
+```
+
+
+```{r}
+# Code from previous exercise:
+pioneers <- c("GAUSS:1777", "BAYES:1702", "PASCAL:1623", "PEARSON:1857")
+split <- strsplit(pioneers, split = ":")
+split_low <- lapply(split, tolower)
+
+# Write function select_first()
+select_first <- function(x) {
+  x[1]
+}
+
+# Apply select_first() over split_low: names
+names <- lapply(split_low, select_first)
+
+# Write function select_second()
+select_second <- function(x) {
+  x[2]
+}
+
+
+
+# Apply select_second() over split_low: years
+years <- lapply(split_low, select_second)
+```
+
+Example of lapply
+```{r}
+# Definition of split_low
+pioneers <- c("GAUSS:1777", "BAYES:1702", "PASCAL:1623", "PEARSON:1857")
+split <- strsplit(pioneers, split = ":")
+split_low <- lapply(split, tolower)
+
+# Generic select function
+select_el <- function(x, index) {
+  x[index]
+}
+
+# Use lapply() twice on split_low: names and years
+names <- lapply(split_low, select_el, index = 1 )
+years <- lapply(split_low, select_el, index = 2 )
+```
+
+
+### sapply
+
+
+```{r}
+cities <- c("New York", "Paris", "London", "oslo")
+
+unlist(lapply(cities, nchar))
+
+# Alternativ apply -> do the same as above:
+
+sapply(cities, nchar) sapply(cities, nchar, USE.NAMES = F)
+
+tibble(cities = sapply(cities, nchar),
+       cities_name  = sapply(cities, nchar) %>% names())
+
+```
+
+Example two:
+
+```{r}
+
+first_and_last <- function(name) {
+  
+  name <- gsub(" ", "", name);
+  
+  letters <- strsplit(name, split = "")[[1]]
+  
+  c(first = min(letters), last = max(letters))
+}
+
+first_and_last("New York")
+
+strsplit("abc", split ="")[[1]]
+str_split("abc", pattern = "")[[1]]
+min( str_split("abc", pattern = "")[[1]] )
+max( str_split("abc", pattern = "")[[1]] )
+
+# Generate a matrix:
+sapply(cities, function(x) {first_and_last(x)}) 
+# %>% as_tibble()
+
+```
+
+sapply possible when the output returns as the same/type and length 
+
+Example when returning different lenght of outpit
+```{r}
+uniquie_letters <- function(name) {
+  
+  name <- gsub(" ", "", name);
+  
+  letters <- strsplit(name, split = "")[[1]]
+  
+  unique(letters)
+  
+}
+
+uniquie_letters("London")
+
+lapply(cities, function(x) {uniquie_letters(x)})
+
+# apply return the same as lapply -> when not possible to return vector
+sapply( cities, function(x) {uniquie_letters(x)})
+
+# Return the same as lapply
+
+```
+
+
+Example
+```{r}
+# temp is already defined in the workspace
+temp <- list( "monday" = c(1,2,9, 12), "tuesday" = c(4,3, 5, 3, 6), "wednesday" = c(3,7,5,0) )
+# Finish function definition of extremes_avg
+extremes_avg <- function(x) {
+  ( min(x) + max(x) ) / 2
+}
+
+# Apply extremes_avg() over temp using sapply()
+sapply(temp,extremes_avg )
+
+# Apply extremes_avg() over temp using lapply()
+lapply(temp,extremes_avg )
+
+
+# temp is already available in the workspace
+temp
+# Create a function that returns min and max of a vector: extremes
+extremes <- function(x) {
+  c(min = min(x), max = max(x))
+}
+
+# Apply extremes() over temp with sapply()
+sapply(temp, extremes)
+
+# Apply extremes() over temp with lapply()
+lapply(temp, extremes)
+
+```
+
+### vapply
+
+vapply: apply functino over list or vektcot. Exlicity specify output format.
+
+```{r}
+# numeric -> return 1 value
+vapply(cities, nchar, numeric(1))
+
+first_and_last
+
+temp
+# Definition of basics()
+basics <- function(x) {
+  c(min = min(x), mean = mean(x), max = max(x))
+}
+
+# Apply basics() over temp using vapply()
+vapply(temp, basics, numeric(3))
+
+
+# Example 2
+vapply(temp, function(x, y) { mean(x) > y }, y = 5, logical(1))
+
+```
+
+
+
+
+
+
+
+
