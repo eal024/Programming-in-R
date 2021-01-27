@@ -143,6 +143,27 @@ centre(x, "median")
 
 
 
+# rep ---------------------------------------------------------------------
+
+power1 <- function( exp ) {
+  function(x) { x^exp}
+}
+
+linear <- power1(1)
+square <- power1(2)
+
+map2( 1:10, rep(2, times = 10), function(x,y) { test <- power1(x);test(y)} )
+
+
+
+
+
+
+
+
+
+
+
 
 
 
